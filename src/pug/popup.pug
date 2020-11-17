@@ -1,0 +1,27 @@
+doctype html
+head
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title Radio Rocks title
+    link(rel='stylesheet' href='../css/style.css')
+body
+    header.header
+        a.header__logoLink(href='https://www.radioroks.ua/' target="_blank")
+            figure.header__logo
+                include includes/logo.pug
+        nav
+            ul.nav#nav
+                li
+                    button.nav__button#playerNav
+                        include includes/navIconMain.pug
+                li
+                    button.nav__button#channelsNav
+                        include includes/stationsIcon.pug
+                li
+                    button.nav__button#bookmarksNav
+                        include includes/bookMarkIcon.pug
+    main.main#main
+        include includes/main.pug
+    footer.footer
+        include includes/footer.pug
+    script(src='../js/popup.js')

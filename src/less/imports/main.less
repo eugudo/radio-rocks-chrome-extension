@@ -1,0 +1,74 @@
+.main {
+    min-height: 460px;
+    max-height: 460px;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+.player {
+    display: none;
+    width: 100%;
+    padding: 80px 0;
+}
+
+.playPauseButton {
+    display: block;
+    width: 100px;
+    margin: 0 auto 50px auto;
+    &:hover .playPauseIcon {
+        fill: #ffffff;
+    }
+    &.active {
+        & .playPauseIcon .playPauseIcon__play{
+            display: none;
+        }
+        & .playPauseIcon .playPauseIcon__pause{
+            display: block;
+        }
+    }
+    &.hidden {
+        & .playPauseIcon .playPauseIcon__play{
+            display: none;
+        }
+        & .playPauseIcon .playPauseIcon__pause{
+            display: none;
+        }
+    }
+}
+
+.playPauseIcon {
+    fill:#f3c309;
+    &__pause {
+        display: none;
+    }
+}
+
+.songInfo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    &__titles {
+        margin-right: 10px;
+    }
+    &__bookMark:hover .rockHand__path {
+        fill: var(--default);
+    }
+}
+
+.songAuthor {
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.songTitle {
+    font-size: 15px;
+}
+
+.rockHand {
+    min-width: 40px;
+    &__path {
+        fill: var(--accent);
+    }
+}
+

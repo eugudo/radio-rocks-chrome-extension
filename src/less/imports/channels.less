@@ -1,0 +1,26 @@
+.channels {
+    display: none;
+    width: 100%;
+    padding: 20px 0;
+    font-size: 15px;
+    font-weight: 700;
+    &__item {
+        position: relative;
+        margin-bottom: 15px;
+        padding: 20px 0 20px 35px;
+        background-color: var(--accentBg);
+        &::before {
+            position: absolute;
+            content: "►";
+            width: 6px;
+            height: 6px;
+            top: 20px;
+            left: 15px;
+        }
+        &:hover {
+            color: var(--accentBg);
+            background-color: var(--default);
+            cursor: pointer;
+        }
+    }
+}

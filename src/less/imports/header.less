@@ -1,0 +1,60 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 10px;
+    &__logo {
+        width: 80px;
+    }
+}
+
+.logo {
+    &__pathColor {
+        fill: var(--accent);
+    }
+}
+
+.nav {
+    display: flex;
+    justify-content: space-between;
+    min-width: 155px;
+    &__button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--defaultBg);
+        border-radius: 5px;
+        background-color: var(--accentBg);
+        &:hover {
+            background-color: var(--accent);
+            .navIcon .navIcon__path {
+                fill: var(--accentBg);
+                stroke: var(--accentBg);
+            }
+        }
+        &:active {
+            background-color: var(--default);
+            .navIcon .navIcon__path {
+                fill: var(--accentBg);
+                stroke: var(--accentBg);
+            } 
+        }
+        &_active {
+            border: 1px solid var(--default);
+            background-color: var(--default);
+            & .navIcon .navIcon__path {
+                fill: var(--accentBg);
+                stroke: var(--accentBg);
+            }
+        }
+    }
+}
+
+.navIcon {
+    height: 20px;
+    &__path {
+        fill: var(--default);
+        stroke: var(--default);
+    }
+}

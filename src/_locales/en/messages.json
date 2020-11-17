@@ -1,0 +1,42 @@
+{
+    "extensionName": {
+        "message": "Radio ROCKS"
+    },
+    "extensionDescription": {
+        "message": "Описаниетут нужно сделать"
+    },
+    "hoverIconTooltip": {
+        "message": "Radio ROCKS. Rock. Only rock!"
+    },
+    "playerButtonTitle": {
+        "message": "Player"
+    },
+    "channelsButtonTitle": {
+        "message": "Channels"
+    },
+    "bookmarksButtonTitle": {
+        "message": "Bookmarks"
+    },
+
+    "channelsTitle": {
+        "message": "Click to activate"
+    },
+    "channelsMainHeader": {
+        "message": "Radio Rocks - Listen Live"
+    },
+    "channelsUkrainianHeader": {
+        "message": "Ukrainian rock"
+    },
+    "channelsNewHeader": {
+        "message": "New rock"
+    },
+    "channelsHardHeader": {
+        "message": "Hard'nHeavy"
+    },
+    "channelsBalladsHeader": {
+        "message": "Rock ballads"
+    },
+    "channelsIndiHeader": {
+        "message": "Інді.UA Radio"
+    }
+}

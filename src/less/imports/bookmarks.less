@@ -1,0 +1,22 @@
+.bookmarks {
+    display: none;
+    width: 100%;
+    padding: 25px 0 0 15px;
+    counter-reset: my-counter;
+    &__item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        counter-increment: my-counter;
+        &::before {
+            content: counter(my-counter) ".";
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        & .songAuthor {
+            margin-right: 10px;
+            margin-bottom: 0;
+        }
+    }
+}
