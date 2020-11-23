@@ -55,6 +55,7 @@ const lastActiveChannel: LastActiveChannel = {
     channelName: chrome.i18n.getMessage('channelsMainHeader'),
     channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS',
     infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+    order: 1,
 };
 
 document.addEventListener('DOMContentLoaded', () => initializeBackgroundPage());
@@ -118,12 +119,10 @@ const player: Player = {
     },
     setPlaingStatus(bool: boolean): void {
         if (bool) {
-            console.log('играть')
             this.isPlaying = bool;
             this.audio.play();
             return;
         }
-        console.log('остановить')
         this.isPlaying = bool;
         this.audio.pause();
     },
@@ -133,6 +132,13 @@ const player: Player = {
     getVolumeLevel(): number {
         return this.audio.volume;
     },
+    switchChannel(channel: LastActiveChannel): void {
+        this.audio.setAttribute('src', channel.channelUrl);
+        if (this.isPlaying) {
+            this.setPlaingStatus(false);
+            this.setPlaingStatus(true);
+        }
+    }
 };
 
 const state: State = {

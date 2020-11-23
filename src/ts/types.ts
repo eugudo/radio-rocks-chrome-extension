@@ -16,6 +16,7 @@ export type LastActiveChannel = {
     channelName: string;
     channelUrl: string;
     infoUrl: string;
+    order: number;
 };
 
 export type VolumeLevel = number;
@@ -27,6 +28,7 @@ export interface Player {
     setPlaingStatus(bool: boolean): void;
     setVolumeLevel(level: number): void;
     getVolumeLevel(): number;
+    switchChannel(channel: LastActiveChannel): void;
 }
 
 export interface State {

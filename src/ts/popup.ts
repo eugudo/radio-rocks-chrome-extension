@@ -60,7 +60,6 @@ const footerMap = {
         svgMaxVolumeClass: 'volumeIcon__max',
         svgMediumVolumeClass: 'volumeIcon__medium',
         svgMinVolumeClass: 'volumeIcon__min',
-
     }
 };
 
@@ -150,6 +149,7 @@ class PageContentManager extends PageUi {
         const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
         lastActiveChannelPromise.then((response) => {
             if (response !== undefined) {
+                console.log(response)
                 document.getElementById(footerMap.lastActiveChannelTitle.id)!.innerText = String(response.channelName);
             }
         });
@@ -239,15 +239,10 @@ class PageEventsHandler extends PageUi {
 
     addHandlers(): void {
         document.getElementById(navButtonsMap.containerId)!.addEventListener('click', this.changeNav.bind(this));
-        // prettier-ignore
         document.getElementById(screensMap.player.buttons.playPauseButtonId)!.addEventListener('click', this.changePlayingState.bind(this));
-        // prettier-ignore
         document.getElementById(footerMap.volumeLevel.id)!.addEventListener('click', this.changeVolumeLevel.bind(this));
         document.getElementById(footerMap.volumeIcon.id)!.addEventListener('click', this.muteAudio.bind(this));
-
-        // сюда же обработка кнопки play
-        // document.getElementById('channelsScreen')!.addEventListener('click', this.changeChannel.bind(this));
-        // console.log('сделано');
+        document.getElementById(screensMap.channels.screenId)!.addEventListener('click', this.switchChannel.bind(this));
     }
 
     changeNav(event: MouseEvent): void {
@@ -365,12 +360,40 @@ class PageEventsHandler extends PageUi {
             this.setVolumeIconValue(0);
         }
     }
+
+    switchChannel(event: MouseEvent): void {
+        const li: HTMLElement | null = (event.target as Element).closest('li')!;
+        if (li === null) {
+            return;
+        }
+        const url = li.getAttribute('data-url');
+        if (url === null) {
+            return
+        }
+        const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+        lastActiveChannelPromise.then((response) => {
+            if (response === undefined || response.channelUrl === url) {
+                return;
+            }
+            const channelsListPromise = this.getChromeStorageData<Channels>(settings.channelsList);
+            channelsListPromise.then((response) => {
+                if (response === undefined) {
+                    return;
+                }
+                const newChannel = Object.values(response).find(channel => channel.channelUrl === url)!;
+                document.getElementById(screensMap.channels.screenId)!.querySelectorAll("li").forEach(elem => elem.classList.remove('active'));
+                li.classList.add('active');
+                this.setChromeStorageData({ [settings.lastActiveChannel]: newChannel });
+                const pageContentManager = new PageContentManager(this.state);
+                pageContentManager.setFooterChannelTitle();
+                this.state.player.switchChannel(newChannel);
+            });
+        })
+
+    }
 }
 
-// setLastAuthorAndSong(); // засетить под кнопкой последнего автора и название песни.  // добавить просто обработчик на это дело, чтобы один раз проверялся при смене автора дергался ивент
-// 2 - добавить события+состояния (что там активно, что нет)
-// на кнопки проигрывания (со сменой состояния)
-// на тайтл если новый есть - сменить
-// на кнопку коза - если есть в избранном - активна, если нет - нажать добавить в избранное
-// на звук - в зависимости от уровня иконка + при нажатии смена уровня и иконки
-// на выбор канала - активный подсветить и при нажатии получить канал - отправить событие в обработчик кнопки получить канал и проиграть убрать старый активный подсветить новый и обработчик снизу титр
+
+
+
+
