@@ -76,7 +76,7 @@ const initializeBackgroundPage = (): void => {
                 setChromeStorageData({ [settings.lastActiveChannel]: lastActiveChannel });
             }
             if (!values[3]) {
-                setChromeStorageData({ [settings.volumeLevel]: 100 });
+                setChromeStorageData({ [settings.volumeLevel]: 1 });
             }
             setAudioSrc();
         }
@@ -112,20 +112,26 @@ const setAudioSrc = (src?: string): void => {
 
 const player: Player = {
     isPlaying: false,
+    audio: <HTMLAudioElement>document.getElementById('audio')!,
     getPlaingStatus(): boolean {
         return this.isPlaying;
     },
     setPlaingStatus(bool: boolean): void {
-        const audio = <HTMLAudioElement>document.getElementById('audio')!;
         if (bool) {
             console.log('играть')
             this.isPlaying = bool;
-            audio.play();
+            this.audio.play();
             return;
         }
         console.log('остановить')
         this.isPlaying = bool;
-        audio.pause();
+        this.audio.pause();
+    },
+    setVolumeLevel(level: number): void {
+        this.audio.volume = level;
+    },
+    getVolumeLevel(): number {
+        return this.audio.volume;
     },
 };
 

@@ -22,8 +22,11 @@ export type VolumeLevel = number;
 
 export interface Player {
     isPlaying: boolean;
+    audio: HTMLAudioElement;
     getPlaingStatus(): boolean;
     setPlaingStatus(bool: boolean): void;
+    setVolumeLevel(level: number): void;
+    getVolumeLevel(): number;
 }
 
 export interface State {

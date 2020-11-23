@@ -54,6 +54,14 @@ const footerMap = {
     volumeLevel: {
         id: 'volumeLevel',
     },
+    volumeIcon: {
+        id: 'volumeIcon',
+        svgSpeakerClass: 'volumeIcon__speaker',
+        svgMaxVolumeClass: 'volumeIcon__max',
+        svgMediumVolumeClass: 'volumeIcon__medium',
+        svgMinVolumeClass: 'volumeIcon__min',
+
+    }
 };
 
 const initializePage = (): void => {
@@ -152,9 +160,11 @@ class PageContentManager extends PageUi {
         const volumeLevelPromise = this.getChromeStorageData<VolumeLevel>(settings.volumeLevel);
         volumeLevelPromise.then((response) => {
             if (response === undefined) {
-                volumeElem.setAttribute('value', '100');
+                volumeElem.setAttribute('value', '1');
             } else {
                 volumeElem.setAttribute('value', `${response}`);
+                const volumeSetter = new PageEventsHandler(this.state);
+                volumeSetter.setVolumeIconValue(response);
             }
         });
     }
@@ -163,20 +173,26 @@ class PageContentManager extends PageUi {
         const ul = document.getElementById(screensMap.channels.screenId)!;
         const template = <HTMLTemplateElement>document.getElementById(screensMap.channels.channelItemTemplateId)!;
         const channelsListPromise = this.getChromeStorageData<Channels>(settings.channelsList);
-        channelsListPromise.then((response) => {
-            if (response === undefined) {
+        const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+        Promise.all([channelsListPromise, lastActiveChannelPromise]).then((response) => {
+            if (response[0] === undefined || response[1] === undefined) {
                 return;
             }
-            Object.values(response)
+            const lastActiveChannel = response[1];
+            Object.values(response[0])
                 .sort((channel1, channel2) => channel1.order - channel2.order)
                 .forEach((channel) => {
                     const clone = <HTMLElement>template.content.cloneNode(true);
                     const li = <HTMLElement>clone.querySelector(`.${screensMap.channels.channelItemDefaultClass}`)!;
+                    if (channel.channelName === lastActiveChannel.channelName) {
+                        li.classList.add('active');
+                    }
                     li.innerText = channel.channelName;
                     li.setAttribute('data-url', channel.channelUrl);
                     ul.append(li);
                 });
-        });
+
+        })
     }
 
     setBookmarksList(): void {
@@ -200,17 +216,11 @@ class PageContentManager extends PageUi {
 
     setPlayPauseButtonStatus(): void {
         const isPlaing = this.state.player.getPlaingStatus();
-        document
-            .getElementById(screensMap.player.buttons.playPauseButtonId)!
-            .classList.toggle(screensMap.player.buttons.playPauseButtonHiddenClass);
+        document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.toggle(screensMap.player.buttons.playPauseButtonHiddenClass);
         if (isPlaing && this.lastActiveScreenId === screensMap.player.screenId) {
-            document
-                .getElementById(screensMap.player.buttons.playPauseButtonId)!
-                .classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
+            document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
         } else {
-            document
-                .getElementById(screensMap.player.buttons.playPauseButtonId)!
-                .classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
+            document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
         }
     }
 }
@@ -229,8 +239,11 @@ class PageEventsHandler extends PageUi {
 
     addHandlers(): void {
         document.getElementById(navButtonsMap.containerId)!.addEventListener('click', this.changeNav.bind(this));
+        // prettier-ignore
         document.getElementById(screensMap.player.buttons.playPauseButtonId)!.addEventListener('click', this.changePlayingState.bind(this));
-
+        // prettier-ignore
+        document.getElementById(footerMap.volumeLevel.id)!.addEventListener('click', this.changeVolumeLevel.bind(this));
+        document.getElementById(footerMap.volumeIcon.id)!.addEventListener('click', this.muteAudio.bind(this));
 
         // сюда же обработка кнопки play
         // document.getElementById('channelsScreen')!.addEventListener('click', this.changeChannel.bind(this));
@@ -246,11 +259,11 @@ class PageEventsHandler extends PageUi {
             .getElementById(navButtonsMap.containerId)!
             .querySelectorAll(`.${navButtonsMap.activeNavButtonClass}`)
             .forEach((element) => element.classList.remove(navButtonsMap.activeNavButtonClass));
-            navButton.classList.add(navButtonsMap.activeNavButtonClass);
+        navButton.classList.add(navButtonsMap.activeNavButtonClass);
         this.lastActiveNavButtonId = navButton.id;
         this.state.setLastActiveNavButtonId(this.lastActiveNavButtonId);
         this.lastActiveScreenId = this.getScreenId();
-         this.state.setLastActiveScreenId(this.lastActiveScreenId);
+        this.state.setLastActiveScreenId(this.lastActiveScreenId);
         const main = document.getElementById(screensMap.containerId)!;
         const screensList = main.children;
         for (let i = 0; i < screensList.length; i++) {
@@ -258,38 +271,101 @@ class PageEventsHandler extends PageUi {
             screen.classList.remove(screensMap.activeScreenClass);
         }
         document.getElementById(this.lastActiveScreenId)!.classList.add(screensMap.activeScreenClass);
+        this.setActiveElements();
+    }
+
+    // при смене вкладок функция отслеживает состояние элементов и добавляет нужные классы
+    setActiveElements(): void {
+        if (this.lastActiveScreenId === screensMap.player.screenId) {
+            const playPauseButton = document.getElementById(screensMap.player.buttons.playPauseButtonId)!;
+            // prettier-ignore
+            if (!playPauseButton.classList.contains(screensMap.player.buttons.playPauseButtonActiveClass) && this.state.player.getPlaingStatus()) {
+                playPauseButton.classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
+            }
+        }
     }
 
     getScreenId(): string {
-        switch(this.lastActiveNavButtonId) {
-            case (navButtonsMap.playerButtonId): return screensMap.player.screenId;
-            case (navButtonsMap.channelsButtonId): return screensMap.channels.screenId;
-            case (navButtonsMap.bookmarksButtonId): return screensMap.bookmarks.screenId;
-            default: return '';
+        switch (this.lastActiveNavButtonId) {
+            case navButtonsMap.playerButtonId:
+                return screensMap.player.screenId;
+            case navButtonsMap.channelsButtonId:
+                return screensMap.channels.screenId;
+            case navButtonsMap.bookmarksButtonId:
+                return screensMap.bookmarks.screenId;
+            default:
+                return '';
         }
     }
 
     changePlayingState(event: MouseEvent): void {
         const playPauseButton: HTMLButtonElement | null = (event.target as Element).closest('button')!;
-        // if (navButton === null || navButton.classList.contains(navButtonsMap.activeNavButtonClass)) {
-        //     return;
-        // }
-        if(this.state.player.getPlaingStatus()) {
+        if (playPauseButton === null) {
+            return;
+        }
+        playPauseButton.classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
+        if (this.state.player.getPlaingStatus()) {
             this.state.player.setPlaingStatus(false);
             return;
         }
         this.state.player.setPlaingStatus(true);
-
-
     }
 
+    setChromeStorageData = <T>(key: Record<string, T>): void => {
+        chrome.storage.sync.set(key);
+    }
 
+    changeVolumeLevel(event: MouseEvent) {
+        const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
+        const percent = Math.round((event.offsetX / volumeElem.getBoundingClientRect().width) * 10) / 10;
+        this.state.player.setVolumeLevel(percent);
+        this.setChromeStorageData({ [settings.volumeLevel]: percent });
+        volumeElem.setAttribute('value', `${percent}`);
+        this.setVolumeIconValue(percent);
+    }
 
+    setVolumeIconValue(percent: number): void {
+        const volumeIcon = document.getElementById(footerMap.volumeIcon.id)!;
+        const minVolumePath = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgMinVolumeClass}`)!;
+        const mediumVolumePath = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgMediumVolumeClass}`)!;
+        const maxVolumePath = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgMaxVolumeClass}`)!;
+        const speakerIcon = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgSpeakerClass}`)!;
+        if (percent === 0) {
+            [minVolumePath, mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.add('hidden'));
+            speakerIcon.classList.add('muted');
+            return;
+        } else if (percent > 0 && percent < 0.5) {
+            minVolumePath.classList.remove('hidden');
+            speakerIcon.classList.remove('muted');
+            [mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.add('hidden'));
+            return;
+        } else if (percent > 0.5 && percent < 0.8) {
+            maxVolumePath.classList.add('hidden');
+            speakerIcon.classList.remove('muted');
+            [minVolumePath, mediumVolumePath].forEach(elem => elem.classList.remove('hidden'));
+            return;
+        } else {
+            speakerIcon.classList.remove('muted');
+            [minVolumePath, mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.remove('hidden'));
+        }       
+    }
 
-
-
+    muteAudio(): void {
+        // TODO: сделать lastVolumeLevel чтобы не возвращать к 100% звук
+        const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
+        if (this.state.player.getVolumeLevel() === 0) {
+            this.state.player.setVolumeLevel(1);
+            this.setChromeStorageData({ [settings.volumeLevel]: 1 });
+            volumeElem.setAttribute('value', `${1}`);
+            this.setVolumeIconValue(1);
+        } else {
+            this.state.player.setVolumeLevel(0);
+            this.setChromeStorageData({ [settings.volumeLevel]: 0 });
+            volumeElem.setAttribute('value', `${0}`);
+            this.setVolumeIconValue(0);
+        }
+    }
 }
-
 
 // setLastAuthorAndSong(); // засетить под кнопкой последнего автора и название песни.  // добавить просто обработчик на это дело, чтобы один раз проверялся при смене автора дергался ивент
 // 2 - добавить события+состояния (что там активно, что нет)
@@ -298,4 +374,3 @@ class PageEventsHandler extends PageUi {
 // на кнопку коза - если есть в избранном - активна, если нет - нажать добавить в избранное
 // на звук - в зависимости от уровня иконка + при нажатии смена уровня и иконки
 // на выбор канала - активный подсветить и при нажатии получить канал - отправить событие в обработчик кнопки получить канал и проиграть убрать старый активный подсветить новый и обработчик снизу титр
-

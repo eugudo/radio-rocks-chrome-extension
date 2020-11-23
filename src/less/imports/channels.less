@@ -11,20 +11,20 @@
         background-color: var(--accentBg);
         &::before {
             position: absolute;
-            content: "►";
+            content: '►';
             width: 6px;
             height: 6px;
             top: 20px;
             left: 15px;
         }
-        &:hover {
+        &.active {
             color: var(--accentBg);
             background-color: var(--default);
-            cursor: pointer;
         }
-        &.active_channel {
+        &:hover {
             color: var(--accentBg);
-            background-color: var(--accent); 
+            background-color: var(--accent);
+            cursor: pointer;
         }
     }
 }
