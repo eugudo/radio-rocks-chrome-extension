@@ -7,7 +7,7 @@
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,
       "strictNullChecks": true,
-      "removeComments": false,
+      "removeComments": true,
   },
   "exclude": ["ts/types.ts"]
 }
