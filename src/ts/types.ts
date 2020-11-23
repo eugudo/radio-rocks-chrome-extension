@@ -1,23 +1,24 @@
-export type AvailableChannels = {[key: string]: string};
-export type SavedSongs = string[];
-export type LastActiveChannel = string;
-export type VolumeLevel = number;
-export type AvailableChannelsSettings = {
+export type Channels = {
     [key: string]: {
         channelName: string;
         channelUrl: string;
-    }
+        infoUrl: string;
+        order: number;
+    };
 };
 
-export interface AppBackgroundData {
-    activeTabId: string | null;
-    activeScreenId: string | null;
-    getActiveButtonTabId(): string | null;
-    setActiveButtonTabId(id: string): void;
-    getActiveScreenId(): string | null;
-    setActiveScreenId(id: string): void;
-    player: Player;
-}
+export type Bookmark = {
+    songAuthor: string;
+    songTitle: string;
+};
+
+export type LastActiveChannel = {
+    channelName: string;
+    channelUrl: string;
+    infoUrl: string;
+};
+
+export type VolumeLevel = number;
 
 export interface Player {
     isPlaying: boolean;
@@ -25,4 +26,12 @@ export interface Player {
     setPlaingStatus(bool: boolean): void;
 }
 
-
+export interface State {
+    lastActiveNavButtonId: string;
+    lastActiveScreenId: string;
+    getLastActiveNavButtonId(): string | null;
+    setLastActiveNavButtonId(id: string): void;
+    getLastActiveScreenId(): string | null;
+    setLastActiveScreenId(id: string): void;
+    player: Player;
+}

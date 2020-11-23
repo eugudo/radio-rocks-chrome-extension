@@ -1,277 +1,301 @@
-import { AppBackgroundData } from "src/ts/types";
+import { State } from 'src/ts/types';
+import { LastActiveChannel } from 'src/ts/types';
+import { VolumeLevel } from 'src/ts/types';
+import { Channels } from 'src/ts/types';
+import { Bookmark } from 'src/ts/types';
 
-enum TabButtonsIds {
-    Player = "playerNav",
-    Channels = "channelsNav",
-    Bookmarks = "bookmarksNav",
-}
+document.addEventListener('DOMContentLoaded', () => initializePage());
 
-enum ScreensIds {
-    Player = "player",
-    Channels = "channels",
-    Bookmarks = "bookmarks",
-}
+const settings = {
+    channelsList: 'channelsList',
+    lastActiveChannel: 'lastActiveChannel',
+    volumeLevel: 'volumeLevel',
+    bookmarksList: 'bookmarksList',
+};
 
-const BACKGROUND: any = chrome.extension.getBackgroundPage();
+const navButtonsMap = {
+    containerId: 'nav',
+    defaultNavButtonClass: 'nav__button',
+    activeNavButtonClass: 'nav__button_active',
+    playerButtonId: 'playerNav',
+    channelsButtonId: 'channelsNav',
+    bookmarksButtonId: 'bookmarksNav',
+};
 
-document.addEventListener("DOMContentLoaded", initializePopupPage);
+const screensMap = {
+    containerId: 'main',
+    activeScreenClass: 'activeScreen',
+    player: {
+        screenId: 'playerScreen',
+        buttons: {
+            playPauseButtonId: 'playPauseButton',
+            playPauseButtonHiddenClass: 'hidden',
+            playPauseButtonActiveClass: 'active',
+        },
+    },
+    channels: {
+        screenId: 'channelsScreen',
+        channelItemTemplateId: 'channelItemTemplate',
+        channelItemDefaultClass: 'channels__item',
+    },
+    bookmarks: {
+        screenId: 'bookmarksScreen',
+        bookmarkTemplateId: 'bookmarkTemplate',
+        bookmarkItemDefaultClass: 'bookmarks__item',
+        bookmarkItemHeaderDefaultClass: 'songAuthor',
+        bookmarkItemSpanTagName: 'span',
+    },
+};
 
-function initializePopupPage() {
-    const APP_BACKGROUND_DATA: AppBackgroundData = BACKGROUND.getAppBackgroundData();
-    const appInitializer = new AppInitializer(APP_BACKGROUND_DATA);
-    appInitializer.initializePopupPage();
-    console.log(APP_BACKGROUND_DATA)
-    // chrome.storage.sync.get(null, function(items) {
-    //     var allKeys = Object.keys(items);
-    //     console.log(allKeys);
-    // });
-    // chrome.storage.sync.get("AvailableChannels", (response) => {
-    //     console.log(response["AvailableChannels"])
-    // });
-}
+const footerMap = {
+    lastActiveChannelTitle: {
+        id: 'lastActiveChannelTitle',
+    },
+    volumeLevel: {
+        id: 'volumeLevel',
+    },
+};
 
+const initializePage = (): void => {
+    const backgroundPage: Window = chrome.extension.getBackgroundPage()!;
+    const state = <State>backgroundPage.getState();
+    const pageUi = new PageUi(state);
+    pageUi.loadBaseUi();
+    const pageContentManager = new PageContentManager(state);
+    pageContentManager.setPageContent();
+    const pageEventsHandler = new PageEventsHandler(state);
+    pageEventsHandler.addHandlers();
+};
 
+class PageUi {
+    state: State;
+    lastActiveNavButtonId: string | null;
+    lastActiveScreenId: string | null;
 
-
-
-
-
-
-
-
-
-
-class AppInitializer {
-    data: AppBackgroundData;
-    activeTabId: string | null;
-    activeScreenId: string | null;
-
-    constructor(data: AppBackgroundData) {
-      this.data = data;
-      this.activeTabId = data.getActiveButtonTabId();
-      this.activeScreenId = data.getActiveScreenId();
+    constructor(state: State) {
+        this.state = state;
+        this.lastActiveNavButtonId = state.getLastActiveNavButtonId();
+        this.lastActiveScreenId = state.getLastActiveScreenId();
     }
 
-    initializePopupPage() {
-        this.setActiveTabButton();
-        this.setActiveScreen();
+    loadBaseUi(): void {
+        this.setLastActiveNavButton();
+        this.setLastActiveScreen();
     }
 
-    setActiveTabButton(): void {
-        if (this.activeTabId === null) {
-            document.getElementById(TabButtonsIds.Player)!.classList.add('nav__button_active');
+    setLastActiveNavButton(): void {
+        if (this.lastActiveNavButtonId === null) {
+            this.lastActiveNavButtonId = navButtonsMap.playerButtonId;
+            this.state.setLastActiveNavButtonId(this.lastActiveNavButtonId);
+            this.setLastActiveNavButton();
         } else {
-            document.getElementById(this.activeTabId)!.classList.add('nav__button_active');
+            document.getElementById(this.lastActiveNavButtonId)!.classList.add(navButtonsMap.activeNavButtonClass);
         }
     }
-    
-    setActiveScreen(): void {
-        if (this.activeScreenId === null) {
-            document.getElementById(ScreensIds.Player)!.classList.add('active');
+
+    setLastActiveScreen(): void {
+        if (this.lastActiveScreenId === null) {
+            this.lastActiveScreenId = screensMap.player.screenId;
+            this.state.setLastActiveScreenId(this.lastActiveScreenId);
+            this.setLastActiveScreen();
         } else {
-            document.getElementById(this.activeScreenId)!.classList.add('active');
+            const main = document.getElementById(screensMap.containerId)!;
+            const screensList = main.children;
+            for (let i = 0; i < screensList.length; i++) {
+                const screen = screensList[i];
+                screen.classList.remove(screensMap.activeScreenClass);
+            }
+            document.getElementById(this.lastActiveScreenId)!.classList.add(screensMap.activeScreenClass);
         }
     }
+
+    getChromeStorageData = <T>(key: string): Promise<T | void> => {
+        return new Promise((resolve) => {
+            chrome.storage.sync.get(key, (response: Record<string, T | void>) => {
+                resolve(response[key]);
+            });
+        });
+    };
+}
+
+class PageContentManager extends PageUi {
+    state: State;
+    lastActiveNavButtonId: string | null;
+    lastActiveScreenId: string | null;
+
+    constructor(state: State) {
+        super(state);
+        this.state = state;
+        this.lastActiveNavButtonId = state.getLastActiveNavButtonId();
+        this.lastActiveScreenId = state.getLastActiveScreenId();
+    }
+
+    setPageContent(): void {
+        this.setFooterChannelTitle();
+        this.setFooterUiVolumelevel();
+        this.setChannelsList();
+        this.setBookmarksList();
+        this.setPlayPauseButtonStatus();
+    }
+
+    setFooterChannelTitle(): void {
+        const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+        lastActiveChannelPromise.then((response) => {
+            if (response !== undefined) {
+                document.getElementById(footerMap.lastActiveChannelTitle.id)!.innerText = String(response.channelName);
+            }
+        });
+    }
+
+    setFooterUiVolumelevel(): void {
+        const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
+        const volumeLevelPromise = this.getChromeStorageData<VolumeLevel>(settings.volumeLevel);
+        volumeLevelPromise.then((response) => {
+            if (response === undefined) {
+                volumeElem.setAttribute('value', '100');
+            } else {
+                volumeElem.setAttribute('value', `${response}`);
+            }
+        });
+    }
+
+    setChannelsList(): void {
+        const ul = document.getElementById(screensMap.channels.screenId)!;
+        const template = <HTMLTemplateElement>document.getElementById(screensMap.channels.channelItemTemplateId)!;
+        const channelsListPromise = this.getChromeStorageData<Channels>(settings.channelsList);
+        channelsListPromise.then((response) => {
+            if (response === undefined) {
+                return;
+            }
+            Object.values(response)
+                .sort((channel1, channel2) => channel1.order - channel2.order)
+                .forEach((channel) => {
+                    const clone = <HTMLElement>template.content.cloneNode(true);
+                    const li = <HTMLElement>clone.querySelector(`.${screensMap.channels.channelItemDefaultClass}`)!;
+                    li.innerText = channel.channelName;
+                    li.setAttribute('data-url', channel.channelUrl);
+                    ul.append(li);
+                });
+        });
+    }
+
+    setBookmarksList(): void {
+        const ul = document.getElementById(screensMap.bookmarks.screenId)!;
+        const template = <HTMLTemplateElement>document.getElementById(screensMap.bookmarks.bookmarkTemplateId)!;
+        const bookmarksListPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
+        bookmarksListPromise.then((response) => {
+            if (response === undefined) {
+                return;
+            }
+            Object.values(response).forEach((bookmark) => {
+                const clone = <HTMLElement>template.content.cloneNode(true);
+                const h2 = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemHeaderDefaultClass}`)!;
+                const span = <HTMLElement>clone.querySelector(`${screensMap.bookmarks.bookmarkItemSpanTagName}`)!;
+                h2.innerText = bookmark.songAuthor;
+                span.innerText = bookmark.songTitle;
+                ul.append(clone);
+            });
+        });
+    }
+
+    setPlayPauseButtonStatus(): void {
+        const isPlaing = this.state.player.getPlaingStatus();
+        document
+            .getElementById(screensMap.player.buttons.playPauseButtonId)!
+            .classList.toggle(screensMap.player.buttons.playPauseButtonHiddenClass);
+        if (isPlaing && this.lastActiveScreenId === screensMap.player.screenId) {
+            document
+                .getElementById(screensMap.player.buttons.playPauseButtonId)!
+                .classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
+        } else {
+            document
+                .getElementById(screensMap.player.buttons.playPauseButtonId)!
+                .classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
+        }
+    }
+}
+
+class PageEventsHandler extends PageUi {
+    state: State;
+    lastActiveNavButtonId: string | null;
+    lastActiveScreenId: string | null;
+
+    constructor(state: State) {
+        super(state);
+        this.state = state;
+        this.lastActiveNavButtonId = state.getLastActiveNavButtonId();
+        this.lastActiveScreenId = state.getLastActiveScreenId();
+    }
+
+    addHandlers(): void {
+        document.getElementById(navButtonsMap.containerId)!.addEventListener('click', this.changeNav.bind(this));
+        document.getElementById(screensMap.player.buttons.playPauseButtonId)!.addEventListener('click', this.changePlayingState.bind(this));
+
+
+        // сюда же обработка кнопки play
+        // document.getElementById('channelsScreen')!.addEventListener('click', this.changeChannel.bind(this));
+        // console.log('сделано');
+    }
+
+    changeNav(event: MouseEvent): void {
+        const navButton: HTMLButtonElement | null = (event.target as Element).closest('button');
+        if (navButton === null || navButton.classList.contains(navButtonsMap.activeNavButtonClass)) {
+            return;
+        }
+        document
+            .getElementById(navButtonsMap.containerId)!
+            .querySelectorAll(`.${navButtonsMap.activeNavButtonClass}`)
+            .forEach((element) => element.classList.remove(navButtonsMap.activeNavButtonClass));
+            navButton.classList.add(navButtonsMap.activeNavButtonClass);
+        this.lastActiveNavButtonId = navButton.id;
+        this.state.setLastActiveNavButtonId(this.lastActiveNavButtonId);
+        this.lastActiveScreenId = this.getScreenId();
+         this.state.setLastActiveScreenId(this.lastActiveScreenId);
+        const main = document.getElementById(screensMap.containerId)!;
+        const screensList = main.children;
+        for (let i = 0; i < screensList.length; i++) {
+            const screen = screensList[i];
+            screen.classList.remove(screensMap.activeScreenClass);
+        }
+        document.getElementById(this.lastActiveScreenId)!.classList.add(screensMap.activeScreenClass);
+    }
+
+    getScreenId(): string {
+        switch(this.lastActiveNavButtonId) {
+            case (navButtonsMap.playerButtonId): return screensMap.player.screenId;
+            case (navButtonsMap.channelsButtonId): return screensMap.channels.screenId;
+            case (navButtonsMap.bookmarksButtonId): return screensMap.bookmarks.screenId;
+            default: return '';
+        }
+    }
+
+    changePlayingState(event: MouseEvent): void {
+        const playPauseButton: HTMLButtonElement | null = (event.target as Element).closest('button')!;
+        // if (navButton === null || navButton.classList.contains(navButtonsMap.activeNavButtonClass)) {
+        //     return;
+        // }
+        if(this.state.player.getPlaingStatus()) {
+            this.state.player.setPlaingStatus(false);
+            return;
+        }
+        this.state.player.setPlaingStatus(true);
+
+
+    }
+
+
+
+
+
 
 }
 
 
+// setLastAuthorAndSong(); // засетить под кнопкой последнего автора и название песни.  // добавить просто обработчик на это дело, чтобы один раз проверялся при смене автора дергался ивент
+// 2 - добавить события+состояния (что там активно, что нет)
+// на кнопки проигрывания (со сменой состояния)
+// на тайтл если новый есть - сменить
+// на кнопку коза - если есть в избранном - активна, если нет - нажать добавить в избранное
+// на звук - в зависимости от уровня иконка + при нажатии смена уровня и иконки
+// на выбор канала - активный подсветить и при нажатии получить канал - отправить событие в обработчик кнопки получить канал и проиграть убрать старый активный подсветить новый и обработчик снизу титр
 
-
-
-
-
-
-
-
-
-
-// const SETTINGS: LocasStorageSettings = JSON.parse(chrome.extension.getBackgroundPage().localStorage.getItem("settings"));
-
-// class Initializer {
-//     settings: LocasStorageSettings;
-
-//     constructor (settings: LocasStorageSettings) {
-//       this.settings = settings;
-//     }
-
-//     initializeUI() {
-//         this.setActiveScreen();
-//     }
-
-//     setActiveScreen() {
-//         // убираем активную кнопку меню, устанавливаем из LS
-//         document.getElementById("nav").querySelectorAll(".nav__button").forEach(element => element.classList.remove("nav__button_active"));
-//         document.getElementById(this.settings.activeTab).classList.add("nav__button_active");
-//         // убираем активный экран, устанавливаем из LS
-//         document.getElementById("main").querySelectorAll("#player, #channels, #bookmarks").forEach(element =>element.classList.remove("active"));
-//         document.getElementById(this.settings.activeScreen).classList.add("active");
-
-
-
-//         // засетить активный скрин в типах чтобы можно было всем убрать отображение и добавить кому нужно через active
-
-
-
-
-//         // document.getElementById("player").classList.remove("hidden");
-
-
-
-
-
-
-//         // document.getElementById("channels").classList.remove("hidden");
-//         // document.getElementById("bookmarks").classList.remove("hidden");
-//         // document.getElementById("bookmarks").classList.remove("hidden");
-
-
-//     }
-
-// }
-
-// const INITIALIZER = new Initializer(SETTINGS);
-// INITIALIZER.initializeUI();
-
-// console.log("Запустил")
-// console.log("Запустилeeee")
-
-
-
-// // добавить последний тайтл песни которая играла
-// // для избранного постоянная проверка при смене тайтла - есть ли в избранном если есть - подсветить козу
-
-
-// // -------------------- Инициализация --------------------
-
-// // получить-засетить активную вкладку
-// // получить-засетить активный канал
-// // получить-засетить статус проигрыватетя (играет или нет)
-// // получить-засетить текущего автора
-// // получить-засетить текущее название песни
-// // засетить текущий канал в левом нижнем углу
-// // получить-засетить уровень звука
-// // получить-засетить список каналов
-// // получить-засетить избанные песни
-
-// // document.getElementById("player")?.addEventListener("click", play);
-
-// // function play(event: Event) {
-// //     const TARGET = event.target as HTMLTextAreaElement;
-// //     const BUTTON = TARGET.closest('button');
-// //     BUTTON?.classList.toggle("active");
-// // }
-
-// // enum NavigationButtonsIds {
-// //     Player = 'playerNav',
-// //     Challens = 'channelsNav',
-// //     Bookmarks = 'bookmarksNav',
-// // }
-
-// // enum ChannelsheaderIds {
-// //     Main = 'channelsMain',
-// //     Ukrainian = 'channelsUkrainian',
-// //     New = 'channelsNew',
-// //     Hard = 'channelsHard',
-// //     Ballads = 'channelsBallads',
-// //     Indi = 'channelsIndi',
-// // }
-
-// // const BUTTONS = {
-// //     player: document.getElementById(NavigationButtonsIds.Player),
-// //     channels: document.getElementById(NavigationButtonsIds.Challens),
-// //     bookmarks: document.getElementById(NavigationButtonsIds.Bookmarks),
-// // };
-
-// // const CHANNELS = {
-// //     main: document.getElementById(ChannelsheaderIds.Main),
-// //     ukrainian: document.getElementById(ChannelsheaderIds.Ukrainian),
-// //     new: document.getElementById(ChannelsheaderIds.New),
-// //     hard: document.getElementById(ChannelsheaderIds.Hard),
-// //     ballads: document.getElementById(ChannelsheaderIds.Ballads),
-// //     indi: document.getElementById(ChannelsheaderIds.Indi),
-// // };
-
-// // (() => {
-// //     if (BUTTONS.player && BUTTONS.channels && BUTTONS.bookmarks) {
-// //         BUTTONS.player.title = chrome.i18n.getMessage('playerButtonTitle');
-// //         BUTTONS.channels.title = chrome.i18n.getMessage('channelsButtonTitle');
-// //         BUTTONS.bookmarks.title = chrome.i18n.getMessage('bookmarksButtonTitle');
-// //     }
-// //     if (CHANNELS.main && CHANNELS.ukrainian && CHANNELS.new && CHANNELS.hard && CHANNELS.ballads && CHANNELS.indi) {
-// //         CHANNELS.main.innerText = chrome.i18n.getMessage('channelsMainHeader');
-// //         CHANNELS.ukrainian.innerText = chrome.i18n.getMessage('channelsUkrainianHeader');
-// //         CHANNELS.new.innerText = chrome.i18n.getMessage('channelsNewHeader');
-// //         CHANNELS.hard.innerText = chrome.i18n.getMessage('channelsHardHeader');
-// //         CHANNELS.ballads.innerText = chrome.i18n.getMessage('channelsBalladsHeader');
-// //         CHANNELS.indi.innerText = chrome.i18n.getMessage('channelsIndiHeader');
-// //         document.querySelectorAll('.channels__item').forEach((element: Element) => {
-// //             element.setAttribute('title', chrome.i18n.getMessage('channelsTitle'));
-// //         });
-// //     }
-// // })();
-
-// // const NAVIGATION_PANEL: HTMLElement | null = document.getElementById('nav');
-
-// // if (NAVIGATION_PANEL !== null) {
-// //     NAVIGATION_PANEL.addEventListener('click', getNavigationButton);
-// // }
-
-// // function getNavigationButton(event: Event) {
-// //     const TARGET = event.target as HTMLTextAreaElement;
-// //     const BUTTON = TARGET.closest('button');
-// //     if (!BUTTON) {
-// //         return;
-// //     }
-// //     switch (BUTTON.id) {
-// //         case NavigationButtonsIds.Player: { switchScreen(BUTTON); }
-// //             break;
-// //         case NavigationButtonsIds.Challens: {switchScreen(BUTTON); }
-// //             break;
-// //         case NavigationButtonsIds.Bookmarks: { switchScreen(BUTTON); }
-// //             break;
-// //         default:
-// //             break;
-// //     }
-// // }
-
-// // function switchScreen(button: HTMLButtonElement) {
-// //     if (button.classList.contains('nav__button_active')) {
-// //         return;
-// //     }
-// //     document
-// //         .getElementById('nav')
-// //         ?.querySelectorAll('.nav__button_active')
-// //         .forEach((element) => element.classList.remove('nav__button_active'));
-// //     button.classList.add('nav__button_active');
-// //     if (button.id === NavigationButtonsIds.Player) {
-// //         document.getElementById('player')?.classList.toggle('hidden');
-// //         document.getElementById('bookmarks')?.classList.add('hidden');
-// //         document.getElementById('channels')?.classList.add('hidden');
-// //     }
-// //     if (button.id === NavigationButtonsIds.Challens) {
-// //         document.getElementById('player')?.classList.add('hidden');
-// //         document.getElementById('bookmarks')?.classList.add('hidden');
-// //         document.getElementById('channels')?.classList.toggle('hidden');
-// //     }
-// //     if (button.id === NavigationButtonsIds.Bookmarks) {
-// //         document.getElementById('bookmarks')?.classList.toggle('hidden');
-// //         document.getElementById('player')?.classList.add('hidden');
-// //         document.getElementById('channels')?.classList.add('hidden');
-// //     }
-// // }
-
-// // const x = "fdidfoi"
-
-// // chrome.storage.local.set({key: "value"}, function() {
-// //     console.log('Value is set to ' + "value");
-// //   });
-
-// //   chrome.storage.local.get(['key'], function(result) {
-// //     console.log('Value currently is ' + result.key);
-// //   });
-
-
-// //removeIf(production)
-// const VARIABLE_TO_DELETE = "Переменная для удаления при компилляции вместе с export{};. Нужно размещать в самом конце скрипта";
-// //endRemoveIf(production)

@@ -1,49 +1,89 @@
-import { AppBackgroundData } from 'src/ts/types';
-import { Player } from 'src/ts/types';
-import { AvailableChannels } from 'src/ts/types';
-import { SavedSongs } from 'src/ts/types';
+import { Channels } from 'src/ts/types';
 import { LastActiveChannel } from 'src/ts/types';
 import { VolumeLevel } from 'src/ts/types';
-import { AvailableChannelsSettings } from 'src/ts/types';
+import { Player } from 'src/ts/types';
+import { State } from 'src/ts/types';
+import { Bookmark } from 'src/ts/types';
 
-enum Settings {
-    AvailableChannels = 'AvailableChannels',
-    SavedSongs = 'SavedSongs',
-    LastActiveChannel = 'LastActiveChannel',
-    VolumeLevel = 'VolumeLevel',
-}
+const settings = {
+    channelsList: 'channelsList',
+    lastActiveChannel: 'lastActiveChannel',
+    volumeLevel: 'volumeLevel',
+    bookmarksList: 'bookmarksList'
+};
 
-function getAppBackgroundData() { return APP_BACKGROUND_DATA };
-
-const PLAYER: Player = {
-    isPlaying: false,
-    getPlaingStatus(): boolean {
-        return this.isPlaying;
+const channelsList: Channels = {
+    main: {
+        channelName: chrome.i18n.getMessage('channelsMainHeader'),
+        channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+        order: 1,
     },
-    setPlaingStatus(bool: boolean): void {
-        this.isPlaying = bool;
+    ukrainian: {
+        channelName: chrome.i18n.getMessage('channelsUkrainianHeader'),
+        channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS_Ukr',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+        order: 2,
+    },
+    new: {
+        channelName: chrome.i18n.getMessage('channelsNewHeader'),
+        channelUrl: 'http://online-radioroks2.tavrmedia.ua/RadioROKS_NewRock',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+        order: 3,
+    },
+    hard: {
+        channelName: chrome.i18n.getMessage('channelsHardHeader'),
+        channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS_HardnHeavy',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+        order: 4,
+    },
+    ballads: {
+        channelName: chrome.i18n.getMessage('channelsBalladsHeader'),
+        channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS_Ballads',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
+        order: 5,
+    },
+    indi: {
+        channelName: chrome.i18n.getMessage('channelsIndiHeader'),
+        channelUrl: 'https://online.radioplayer.ua/RadioIndieUA_HD',
+        infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=radio3indieua',
+        order: 6,
     },
 };
 
-const APP_BACKGROUND_DATA: AppBackgroundData = {
-    activeTabId: null,
-    activeScreenId: null,
-    getActiveButtonTabId(): string | null {
-        return this.activeTabId;
-    },
-    setActiveButtonTabId(id: string): void {
-        this.activeTabId = id;
-    },
-    getActiveScreenId(): string | null {
-        return this.activeTabId;
-    },
-    setActiveScreenId(id: string): void {
-        this.activeTabId = id;
-    },
-    player: PLAYER,
+const lastActiveChannel: LastActiveChannel = {
+    channelName: chrome.i18n.getMessage('channelsMainHeader'),
+    channelUrl: 'http://online-radioroks.tavrmedia.ua/RadioROKS',
+    infoUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
 };
 
-const getSetting = <T>(key: string): Promise<T | void> => {
+document.addEventListener('DOMContentLoaded', () => initializeBackgroundPage());
+
+const initializeBackgroundPage = (): void => {
+    const channelsListPromise = getChromeStorageData<Channels>(settings.channelsList);
+    const bookmarksListPromise = getChromeStorageData<Bookmark[]>(settings.bookmarksList);
+    const lastActiveChannelPromise = getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+    const volumeLevelPromise = getChromeStorageData<VolumeLevel>(settings.volumeLevel);
+    Promise.all([channelsListPromise, bookmarksListPromise, lastActiveChannelPromise, volumeLevelPromise]).then(
+        (values) => {
+            if (!values[0]) {
+                setChromeStorageData({ [settings.channelsList]: channelsList });
+            }
+            if (!values[1]) {
+                setChromeStorageData({ [settings.bookmarksList]: [] });
+            }
+            if (!values[2]) {
+                setChromeStorageData({ [settings.lastActiveChannel]: lastActiveChannel });
+            }
+            if (!values[3]) {
+                setChromeStorageData({ [settings.volumeLevel]: 100 });
+            }
+            setAudioSrc();
+        }
+    );
+};
+
+const getChromeStorageData = <T>(key: string): Promise<T | void> => {
     return new Promise((resolve) => {
         chrome.storage.sync.get(key, (response: Record<string, T | void>) => {
             resolve(response[key]);
@@ -51,81 +91,64 @@ const getSetting = <T>(key: string): Promise<T | void> => {
     });
 };
 
-const setSetting = (key: Record<string, any>): void => {
+const setChromeStorageData = <T>(key: Record<string, T>): void => {
     chrome.storage.sync.set(key);
 };
 
-function getAviableChannels(): AvailableChannelsSettings {
-    return {
-        main: {
-            channelName: chrome.i18n.getMessage('channelsMainHeader'),
-            channelUrl: 'http://o.tavrmedia.ua:9561/get/?k=roks',
-        },
-        ukrainian: {
-            channelName: chrome.i18n.getMessage('channelsUkrainianHeader'),
-            channelUrl: 'http://o.tavrmedia.ua:9561/get/?k=roksukr',
-        },
-        new: {
-            channelName: chrome.i18n.getMessage('channelsNewHeader'),
-            channelUrl: 'http://o.tavrmedia.ua:9561/get/?k=roksnew',
-        },
-        hard: {
-            channelName: chrome.i18n.getMessage('channelsHardHeader'),
-            channelUrl: 'http://o.tavrmedia.ua:9561/get/?k=rokshar',
-        },
-        ballads: {
-            channelName: chrome.i18n.getMessage('channelsBalladsHeader'),
-            channelUrl: 'http://o.tavrmedia.ua:9561/get/?k=roksbal',
-        },
-        indi: {
-            channelName: chrome.i18n.getMessage('channelsIndiHeader'),
-            channelUrl: 'hz',
-        },
-    };
-}
-
-const setStrorageSetting = (key: Settings) => {
-    switch (key) {
-        case Settings.AvailableChannels:
-            setSetting({ [Settings.AvailableChannels]: getAviableChannels() });
-            break;
-        case Settings.SavedSongs:
-            setSetting({ [Settings.SavedSongs]: [] });
-            break;
-        case Settings.LastActiveChannel:
-            setSetting({ [Settings.LastActiveChannel]: getAviableChannels()['main'] });
-            break;
-        case Settings.VolumeLevel:
-            setSetting({ [Settings.VolumeLevel]: 100 });
-            break;
-        default:
-            setSetting({ [Settings.AvailableChannels]: getAviableChannels() });
+const setAudioSrc = (src?: string): void => {
+    const audioElement = document.getElementById('audio')!;
+    if (src) {
+        audioElement.setAttribute('src', src);
+        return;
     }
+    const lastActiveChannelPromise = getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+    lastActiveChannelPromise.then((response) => {
+        if (!response) {
+            return;
+        }
+        audioElement.setAttribute('src', response.channelUrl);
+    });
 };
 
-function initialize(): void {
-    let availableChannels = getSetting<AvailableChannels>(Settings.AvailableChannels);
-    let savedSongs = getSetting<SavedSongs>(Settings.SavedSongs);
-    let lastActiveChannel = getSetting<LastActiveChannel>(Settings.LastActiveChannel);
-    let volumeLevel = getSetting<VolumeLevel>(Settings.VolumeLevel);
-    Promise.all([availableChannels, savedSongs, lastActiveChannel, volumeLevel]).then((values) => {
-        if (!values[0]) {
-            setStrorageSetting(Settings.AvailableChannels);
+const player: Player = {
+    isPlaying: false,
+    getPlaingStatus(): boolean {
+        return this.isPlaying;
+    },
+    setPlaingStatus(bool: boolean): void {
+        const audio = <HTMLAudioElement>document.getElementById('audio')!;
+        if (bool) {
+            console.log('играть')
+            this.isPlaying = bool;
+            audio.play();
+            return;
         }
-        if (!values[1]) {
-            setStrorageSetting(Settings.SavedSongs);
-        }
-        if (!values[2]) {
-            setStrorageSetting(Settings.LastActiveChannel);
-        }
-        if (!values[3]) {
-            setStrorageSetting(Settings.VolumeLevel);
-        }
-    });
-}
+        console.log('остановить')
+        this.isPlaying = bool;
+        audio.pause();
+    },
+};
 
-initialize();
+const state: State = {
+    lastActiveNavButtonId: '',
+    lastActiveScreenId: '',
+    getLastActiveNavButtonId(): string | null {
+        return this.lastActiveNavButtonId === '' ? null : this.lastActiveNavButtonId;
+    },
+    setLastActiveNavButtonId(id: string): void {
+        this.lastActiveNavButtonId = id;
+    },
+    getLastActiveScreenId(): string | null {
+        return this.lastActiveScreenId === '' ? null : this.lastActiveScreenId;
+    },
+    setLastActiveScreenId(id: string): void {
+        this.lastActiveScreenId = id;
+    },
+    player,
+};
 
-//removeIf(production)
-const VARIABLE_TO_DELETE = 'Переменная при компилляции будет удалена вместе с export{}.';
-//endRemoveIf(production)
+function getState() { return state }
+
+
+
+
