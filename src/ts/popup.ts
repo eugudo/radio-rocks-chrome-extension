@@ -310,13 +310,21 @@ class PageEventsHandler extends PageUi {
         chrome.storage.sync.set(key);
     }
 
-    changeVolumeLevel(event: MouseEvent) {
+    changeVolumeLevel(event: MouseEvent): void {
         const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
         const percent = Math.round((event.offsetX / volumeElem.getBoundingClientRect().width) * 10) / 10;
-        this.state.player.setVolumeLevel(percent);
-        this.setChromeStorageData({ [settings.volumeLevel]: percent });
-        volumeElem.setAttribute('value', `${percent}`);
-        this.setVolumeIconValue(percent);
+        const lastVolumeLevelPromise = this.getChromeStorageData<VolumeLevel>(settings.volumeLevel);
+        lastVolumeLevelPromise.then((result) => {
+            if (result) {
+                if (percent === result) {
+                    return;
+                }
+                this.state.player.setVolumeLevel(percent);
+                this.setChromeStorageData({ [settings.volumeLevel]: percent });
+                volumeElem.setAttribute('value', `${percent}`);
+                this.setVolumeIconValue(percent);
+            }
+        });
     }
 
     setVolumeIconValue(percent: number): void {
@@ -339,10 +347,11 @@ class PageEventsHandler extends PageUi {
             speakerIcon.classList.remove('muted');
             [minVolumePath, mediumVolumePath].forEach(elem => elem.classList.remove('hidden'));
             return;
-        } else {
+        } else if (percent > 0.8) {
             speakerIcon.classList.remove('muted');
             [minVolumePath, mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.remove('hidden'));
-        }       
+        }
+        return;
     }
 
     muteAudio(): void {
