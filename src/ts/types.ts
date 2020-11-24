@@ -39,4 +39,26 @@ export interface State {
     getLastActiveScreenId(): string | null;
     setLastActiveScreenId(id: string): void;
     player: Player;
+    channelInfo: ChannelInfo;
+}
+
+export interface ChannelInfoResponseDTO {
+    stime: string;
+    time: string;
+    singer: string;
+    song: string;
+    artist_id: number;
+    url?: string;
+    program: string;
+    song_url: string;
+    video: string;
+    year?: null;
+    cover?: string;
+}
+
+export interface ChannelInfo {
+    currentTime: string|null;
+    singerName: string|null;
+    songName: string|null;
+    coverUrl: string|null;
 }

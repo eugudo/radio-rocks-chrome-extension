@@ -72,6 +72,7 @@ const initializePage = (): void => {
     pageContentManager.setPageContent();
     const pageEventsHandler = new PageEventsHandler(state);
     pageEventsHandler.addHandlers();
+    setInterval(() => pageContentManager.setSongInfo(), 500);
 };
 
 class PageUi {
@@ -223,6 +224,28 @@ class PageContentManager extends PageUi {
             document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
         }
     }
+
+    setSongInfo(): void {
+        const songInfo = document.getElementById('songInfo')!;
+        const isHidden = songInfo.classList.contains('hidden');
+        if (!isHidden && this.state.channelInfo.currentTime === null) {
+            songInfo.classList.add('hidden');
+            return
+        }
+        if (!this.state.player.getPlaingStatus()) {
+            isHidden ? null : songInfo.classList.add('hidden');
+            return
+        }
+        if (isHidden && this.state.channelInfo.currentTime !== null) {
+            console.log('второй кейс')
+            songInfo.classList.remove('hidden');
+        }
+        const author = songInfo.querySelector('.songAuthor')!;
+        const songTitle = songInfo.querySelector('.songTitle')!;
+        author.textContent = this.state.channelInfo.singerName;
+        songTitle.textContent = this.state.channelInfo.songName;      
+    }
+
 }
 
 class PageEventsHandler extends PageUi {
