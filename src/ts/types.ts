@@ -10,6 +10,7 @@ export type Channels = {
 export type Bookmark = {
     songAuthor: string;
     songTitle: string;
+    coverUrl: string;
 };
 
 export type LastActiveChannel = {
@@ -42,23 +43,26 @@ export interface State {
     channelInfo: ChannelInfo;
 }
 
-export interface ChannelInfoResponseDTO {
+export interface BaseChannelInfoDTO {
     stime: string;
     time: string;
     singer: string;
     song: string;
+    cover: string;
+}
+
+export interface FullChannelInfoDTO extends BaseChannelInfoDTO {
     artist_id: number;
     url?: string;
     program: string;
     song_url: string;
     video: string;
     year?: null;
-    cover?: string;
 }
 
 export interface ChannelInfo {
     currentTime: string|null;
-    singerName: string|null;
-    songName: string|null;
-    coverUrl: string|null;
+    singerName: string;
+    songName: string;
+    coverUrl: string;
 }

@@ -4,7 +4,9 @@ import { VolumeLevel } from 'src/ts/types';
 import { Player } from 'src/ts/types';
 import { State } from 'src/ts/types';
 import { Bookmark } from 'src/ts/types';
-import { ChannelInfoResponseDTO } from 'src/ts/types';
+import { BaseChannelInfoDTO } from 'src/ts/types';
+import { FullChannelInfoDTO } from 'src/ts/types';
+
 import { ChannelInfo } from 'src/ts/types';
 
 const settings = {
@@ -123,9 +125,9 @@ const player: Player = {
 
 const channelInfo: ChannelInfo = {
     currentTime: null,
-    singerName: null,
-    songName: null,
-    coverUrl: null,
+    singerName: '',
+    songName: '',
+    coverUrl: '',
 };
 
 const state: State = {
@@ -206,16 +208,18 @@ class ChannelInfoUpdater {
             if(!lastActiveChannel) {
                 return;
             }
-            const getChannelInfoPromise = getChannelInfo<ChannelInfoResponseDTO[]>(lastActiveChannel.infoUrl);
+            const getChannelInfoPromise = getChannelInfo<BaseChannelInfoDTO[]>(lastActiveChannel.infoUrl);
             getChannelInfoPromise.then((channelInfo) => {
                 if(!channelInfo || channelInfo.length === 0) {
                     return;
                 }
                 const currentInfo = channelInfo[0];
-                const artistId = currentInfo.artist_id;
-                if (artistId === 0) {
-                    this.state.channelInfo.currentTime = null;
-                    return;
+                if (lastActiveChannel.channelName !== chrome.i18n.getMessage('channelsIndiHeader')) {
+                    const artistId = (currentInfo as FullChannelInfoDTO).artist_id;
+                    if (artistId === 0) {
+                        this.state.channelInfo.currentTime = null;
+                        return;
+                    }
                 }
                 this.state.channelInfo.currentTime = currentInfo.time;
                 this.state.channelInfo.singerName = currentInfo.singer;

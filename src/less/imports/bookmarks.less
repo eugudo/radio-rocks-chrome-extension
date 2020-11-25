@@ -1,22 +1,53 @@
-.bookmarks {
+.bookmarksScreen {
     display: none;
     width: 100%;
     padding: 25px 0 0 15px;
-    counter-reset: my-counter;
+}
+
+
+.bookmarksList {
     &__item {
-        display: flex;
+        position: relative;
+        display: grid;
         align-items: center;
-        margin-bottom: 15px;
-        counter-increment: my-counter;
+        justify-content: space-between;
+        grid-template-areas:
+            "image singer"
+            "image song";
+        grid-template-columns: 70px 180px;
+        margin-bottom: 20px;
+        &::after,
         &::before {
-            content: counter(my-counter) ".";
-            font-weight: bold;
-            font-size: 18px;
-            margin-right: 5px;
+            opacity: 0;
+            content: "";
+            position: absolute;
+            top: calc(50% - 2px);
+            right: 5px;
+            width: 15px;
+            height: 5px;
+            background-color: var(--warning);
+            transform: rotate(45deg);
         }
-        & .songAuthor {
-            margin-right: 10px;
-            margin-bottom: 0;
+        &::before {
+            transform: rotate(-45deg);
         }
+        &:hover&::after,
+        &:hover&::before {
+            opacity: 1;
+            cursor: pointer;
+        }
+    }
+    &__image {
+        grid-area: image;
+        width: 100%;
+        height: auto;
+    }
+    &__singer {
+        grid-area: singer;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    &__song {
+        grid-area: song;
     }
 }

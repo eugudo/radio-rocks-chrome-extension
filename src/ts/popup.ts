@@ -31,6 +31,7 @@ const screensMap = {
             playPauseButtonId: 'playPauseButton',
             playPauseButtonHiddenClass: 'hidden',
             playPauseButtonActiveClass: 'active',
+            bookmarkButtonId: 'bookmarkButton',
         },
     },
     channels: {
@@ -40,10 +41,12 @@ const screensMap = {
     },
     bookmarks: {
         screenId: 'bookmarksScreen',
-        bookmarkTemplateId: 'bookmarkTemplate',
-        bookmarkItemDefaultClass: 'bookmarks__item',
-        bookmarkItemHeaderDefaultClass: 'songAuthor',
-        bookmarkItemSpanTagName: 'span',
+        bookmarksListId: "bookmarksList",
+        bookmarkTemplateId: 'bookmarksListItem',
+        bookmarkItemDefaultClass: 'bookmarksList__item',
+        bookmarkItemImageClass: 'bookmarksList__image',
+        bookmarkItemSingerClass: 'bookmarksList__singer',
+        bookmarkItemSongClass: 'bookmarksList__song',
     },
 };
 
@@ -196,7 +199,9 @@ class PageContentManager extends PageUi {
     }
 
     setBookmarksList(): void {
-        const ul = document.getElementById(screensMap.bookmarks.screenId)!;
+        const ul = document.getElementById(screensMap.bookmarks.bookmarksListId)!;
+        const children = ul.childNodes;
+        children.forEach(nodeItem => nodeItem.remove());
         const template = <HTMLTemplateElement>document.getElementById(screensMap.bookmarks.bookmarkTemplateId)!;
         const bookmarksListPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
         bookmarksListPromise.then((response) => {
@@ -205,8 +210,11 @@ class PageContentManager extends PageUi {
             }
             Object.values(response).forEach((bookmark) => {
                 const clone = <HTMLElement>template.content.cloneNode(true);
-                const h2 = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemHeaderDefaultClass}`)!;
-                const span = <HTMLElement>clone.querySelector(`${screensMap.bookmarks.bookmarkItemSpanTagName}`)!;
+                const img = clone.querySelector(`.${screensMap.bookmarks.bookmarkItemImageClass}`)!;
+                const h2 = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemSingerClass}`)!;
+                const span = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemSongClass}`)!;
+                img.setAttribute('src', bookmark.coverUrl);
+                img.setAttribute('alt', bookmark.songAuthor);
                 h2.innerText = bookmark.songAuthor;
                 span.innerText = bookmark.songTitle;
                 ul.append(clone);
@@ -226,6 +234,7 @@ class PageContentManager extends PageUi {
 
     setSongInfo(): void {
         const songInfo = document.getElementById('songInfo')!;
+        const bookmarkButton = document.getElementById('bookmarkButton')!;
         const isHidden = songInfo.classList.contains('hidden');
         if (!isHidden && this.state.channelInfo.currentTime === null) {
             songInfo.classList.add('hidden');
@@ -236,13 +245,26 @@ class PageContentManager extends PageUi {
             return
         }      
         if (isHidden && this.state.channelInfo.currentTime !== null) {
-            console.log('второй кейс')
             songInfo.classList.remove('hidden');
         }
         const author = songInfo.querySelector('.songAuthor')!;
         const songTitle = songInfo.querySelector('.songTitle')!;
-        author.textContent = this.state.channelInfo.singerName;
-        songTitle.textContent = this.state.channelInfo.songName;      
+        const singer = this.state.channelInfo.singerName;
+        const song = this.state.channelInfo.songName;
+        author.textContent = singer;
+        songTitle.textContent = song;  
+        const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
+        bookmarksPromise.then((bookmarksList) => {
+            if (!bookmarksList) {
+                return;
+            }
+            const isExistSong = bookmarksList.find((bookmark) => bookmark.songAuthor === singer && bookmark.songTitle === song);
+            if (isExistSong && !bookmarkButton.classList.contains('active')) {
+                bookmarkButton.classList.add('active');
+            } else if (!isExistSong && bookmarkButton.classList.contains('active')) {
+                bookmarkButton.classList.remove('active');
+            }
+        });
     }
 
 }
@@ -265,6 +287,8 @@ class PageEventsHandler extends PageUi {
         document.getElementById(footerMap.volumeLevel.id)!.addEventListener('click', this.changeVolumeLevel.bind(this));
         document.getElementById(footerMap.volumeIcon.id)!.addEventListener('click', this.muteAudio.bind(this));
         document.getElementById(screensMap.channels.screenId)!.addEventListener('click', this.switchChannel.bind(this));
+        document.getElementById(screensMap.player.buttons.bookmarkButtonId)!.addEventListener('click', this.addOrRemoveBookmark.bind(this));
+
     }
 
     changeNav(event: MouseEvent): void {
@@ -420,8 +444,51 @@ class PageEventsHandler extends PageUi {
                 this.state.player.switchChannel(newChannel);
             });
         })
-
     }
+
+    addOrRemoveBookmark(event: MouseEvent): void {
+        const bookmarkButton: HTMLButtonElement | null = (event.target as Element).closest('button')!;
+        const songAuthor = this.state.channelInfo.singerName;
+        const songTitle = this.state.channelInfo.songName;
+        if (!this.state.player.getPlaingStatus() || songAuthor === '') {
+            return
+        }
+        const newBookmark: Bookmark = {
+            songAuthor,
+            songTitle,
+            coverUrl: this.state.channelInfo.coverUrl !== '' ? this.state.channelInfo.coverUrl : 'img/icon128.png',
+        }
+        const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
+        bookmarksPromise.then((bookmarksList) => {
+            if (!bookmarksList) {
+                return;
+            }
+            const isDouble = bookmarksList.some((bookmark) => bookmark.songAuthor === newBookmark.songAuthor && bookmark.songTitle === newBookmark.songTitle);
+            if (!isDouble) {
+                if(!bookmarkButton.classList.contains('active')) {
+                    bookmarkButton.classList.add('active');
+                }
+                bookmarksList.push(newBookmark);
+                this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: bookmarksList});
+                const pageContentManager = new PageContentManager(this.state);
+                pageContentManager.setBookmarksList();
+            } else {
+                // TODO: реализовать анимацию помещения в избранное значок белый становится фон и все
+                const newBookmarksList = bookmarksList.filter((bookmark) => bookmark.songAuthor !== newBookmark.songAuthor && bookmark.songTitle !== newBookmark.songTitle);
+                if(bookmarkButton.classList.contains('active')) {
+                    bookmarkButton.classList.remove('active');
+                }
+                bookmarksList = newBookmarksList;
+                this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: bookmarksList});
+                const pageContentManager = new PageContentManager(this.state);
+                pageContentManager.setBookmarksList();
+
+            }
+        });
+    }
+
+
+
 }
 
 

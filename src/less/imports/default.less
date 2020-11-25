@@ -3,6 +3,7 @@
     --defaultBg:#494949;
     --accent: #ffffff;
     --accentBg: #2a2a2a;
+    --warning: #be2d2d;
   }
 
 body {
@@ -10,7 +11,9 @@ body {
     padding: 15px;
     font: 400 15px/1 'Fira Sans Condensed', Arial, sans-serif;
     color:  var(--default);
-    background: url(../img/background.webp), var(--defaultBg);
+    background: url(../img/background.webp) no-repeat, var(--defaultBg);
+    background-size: cover;
+    background-position: center;
 }
 
 button {
@@ -30,6 +33,20 @@ button {
     display: none;
 }
 
+::-webkit-scrollbar {
+    width: 5px;
+    // background-color: var(--accent);
+}
+ 
+::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px var(--defaultBg); 
+    border-radius: 5px;
+}
+ 
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    -webkit-box-shadow: inset 0 0 6px var(--default); 
+}
 
 
 

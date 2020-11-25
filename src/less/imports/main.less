@@ -47,11 +47,17 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    &__bookmarkButton:hover .bookmarkHand__path {
+        fill: var(--default);
+    }
+    &__bookmarkButton.active .bookmarkHand {
+        min-width: 40px;
+    }
+    &__bookmarkButton.active .bookmarkHand__path {
+        fill: var(--default);
+    }
     &__titles {
         margin-right: 10px;
-    }
-    &__bookMark:hover .rockHand__path {
-        fill: var(--default);
     }
     &.hidden {
         display: none;
@@ -65,11 +71,12 @@
 }
 
 .songTitle {
+    max-width: 165px;
     font-size: 15px;
 }
 
-.rockHand {
-    min-width: 40px;
+.bookmarkHand {
+    min-width: 30px;
     &__path {
         fill: var(--accent);
     }
