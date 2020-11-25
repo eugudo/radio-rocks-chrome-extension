@@ -215,6 +215,7 @@ class ChannelInfoUpdater {
                 const artistId = currentInfo.artist_id;
                 if (artistId === 0) {
                     this.state.channelInfo.currentTime = null;
+                    return;
                 }
                 this.state.channelInfo.currentTime = currentInfo.time;
                 this.state.channelInfo.singerName = currentInfo.singer;

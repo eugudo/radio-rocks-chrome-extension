@@ -150,7 +150,6 @@ class PageContentManager extends PageUi {
         const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
         lastActiveChannelPromise.then((response) => {
             if (response !== undefined) {
-                console.log(response)
                 document.getElementById(footerMap.lastActiveChannelTitle.id)!.innerText = String(response.channelName);
             }
         });
@@ -235,7 +234,7 @@ class PageContentManager extends PageUi {
         if (!this.state.player.getPlaingStatus()) {
             isHidden ? null : songInfo.classList.add('hidden');
             return
-        }
+        }      
         if (isHidden && this.state.channelInfo.currentTime !== null) {
             console.log('второй кейс')
             songInfo.classList.remove('hidden');
