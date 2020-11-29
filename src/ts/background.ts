@@ -6,14 +6,15 @@ import { State } from 'src/ts/types';
 import { Bookmark } from 'src/ts/types';
 import { BaseChannelInfoDTO } from 'src/ts/types';
 import { FullChannelInfoDTO } from 'src/ts/types';
-
 import { ChannelInfo } from 'src/ts/types';
+
+document.addEventListener('DOMContentLoaded', () => initializeBackgroundPage());
 
 const settings = {
     channelsList: 'channelsList',
     lastActiveChannel: 'lastActiveChannel',
     volumeLevel: 'volumeLevel',
-    bookmarksList: 'bookmarksList'
+    bookmarksList: 'bookmarksList',
 };
 
 const channelsList: Channels = {
@@ -97,15 +98,15 @@ const player: Player = {
     },
     setPlaingStatus(bool: boolean): void {
         if (bool) {
-            chrome.browserAction.setBadgeBackgroundColor({color:'red'});
-            chrome.browserAction.setBadgeText({text:'air'});
+            chrome.browserAction.setBadgeBackgroundColor({ color: 'red' });
+            chrome.browserAction.setBadgeText({ text: 'air' });
             this.isPlaying = bool;
             this.audio.play();
             return;
         }
-        chrome.browserAction.setBadgeText({text:''});
+        chrome.browserAction.setBadgeText({ text: '' });
         this.isPlaying = bool;
-        // TODO: разобраться с отставанием аудио. this.currentTime = 0; не помогает. Нужно сдвигать в конец воспроизведения либо обнулять src и сетить заново 
+        // TODO: разобраться с отставанием аудио. this.currentTime = 0; не помогает. Нужно сдвигать в конец воспроизведения либо обнулять src и сетить заново
         this.audio.pause();
     },
     setVolumeLevel(level: number): void {
@@ -120,7 +121,7 @@ const player: Player = {
             this.setPlaingStatus(false);
             this.setPlaingStatus(true);
         }
-    }
+    },
 };
 
 const channelInfo: ChannelInfo = {
@@ -152,17 +153,53 @@ const state: State = {
 const getChannelInfo = <T>(url: string): Promise<T> => {
     return new Promise((resolve) => {
         const ajax = new XMLHttpRequest();
-        ajax.open('GET', url)
+        ajax.open('GET', url);
         ajax.onreadystatechange = () => {
             if (ajax.readyState === 4 && ajax.status === 200) {
                 resolve(JSON.parse(ajax.responseText));
             }
-        }
+        };
         ajax.send();
     });
 };
 
-document.addEventListener('DOMContentLoaded', () => initializeBackgroundPage());
+class ChannelInfoUpdater {
+    state: State;
+
+    constructor(state: State) {
+        this.state = state;
+    }
+
+    updateChannelInfo(): void {
+        if (!state.player.getPlaingStatus()) {
+            return;
+        }
+        const lastActiveChannelPromise = getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
+        lastActiveChannelPromise.then((lastActiveChannel) => {
+            if (!lastActiveChannel) {
+                return;
+            }
+            const getChannelInfoPromise = getChannelInfo<BaseChannelInfoDTO[]>(lastActiveChannel.infoUrl);
+            getChannelInfoPromise.then((channelInfo) => {
+                if (!channelInfo || channelInfo.length === 0) {
+                    return;
+                }
+                const currentInfo = channelInfo[0];
+                if (lastActiveChannel.channelName !== chrome.i18n.getMessage('channelsIndiHeader')) {
+                    const artistId = (currentInfo as FullChannelInfoDTO).artist_id;
+                    if (artistId === 0) {
+                        this.state.channelInfo.currentTime = null;
+                        return;
+                    }
+                }
+                this.state.channelInfo.currentTime = currentInfo.time;
+                this.state.channelInfo.singerName = currentInfo.singer;
+                this.state.channelInfo.songName = currentInfo.song;
+                this.state.channelInfo.coverUrl = currentInfo.cover ? currentInfo.cover : '';
+            });
+        });
+    }
+}
 
 const initializeBackgroundPage = (): void => {
     const channelsListPromise = getChromeStorageData<Channels>(settings.channelsList);
@@ -190,42 +227,6 @@ const initializeBackgroundPage = (): void => {
     setInterval(() => channelInfoUpdater.updateChannelInfo(), 5000);
 };
 
-function getState() { return state }
-
-class ChannelInfoUpdater {
-    state: State;
-
-    constructor(state: State) {
-        this.state = state;
-    }
-
-    updateChannelInfo(): void {
-        if (!state.player.getPlaingStatus()) {
-            return;
-        }
-        const lastActiveChannelPromise = getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
-        lastActiveChannelPromise.then((lastActiveChannel) => {
-            if(!lastActiveChannel) {
-                return;
-            }
-            const getChannelInfoPromise = getChannelInfo<BaseChannelInfoDTO[]>(lastActiveChannel.infoUrl);
-            getChannelInfoPromise.then((channelInfo) => {
-                if(!channelInfo || channelInfo.length === 0) {
-                    return;
-                }
-                const currentInfo = channelInfo[0];
-                if (lastActiveChannel.channelName !== chrome.i18n.getMessage('channelsIndiHeader')) {
-                    const artistId = (currentInfo as FullChannelInfoDTO).artist_id;
-                    if (artistId === 0) {
-                        this.state.channelInfo.currentTime = null;
-                        return;
-                    }
-                }
-                this.state.channelInfo.currentTime = currentInfo.time;
-                this.state.channelInfo.singerName = currentInfo.singer;
-                this.state.channelInfo.songName = currentInfo.song;
-                this.state.channelInfo.coverUrl = currentInfo.cover ? currentInfo.cover : '';
-            });
-        });
-    }
+function getState() {
+    return state;
 }

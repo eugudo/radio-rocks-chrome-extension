@@ -11,6 +11,7 @@ export type Bookmark = {
     songAuthor: string;
     songTitle: string;
     coverUrl: string;
+    timestamp: string;
 };
 
 export type LastActiveChannel = {
@@ -61,7 +62,7 @@ export interface FullChannelInfoDTO extends BaseChannelInfoDTO {
 }
 
 export interface ChannelInfo {
-    currentTime: string|null;
+    currentTime: string | null;
     singerName: string;
     songName: string;
     coverUrl: string;

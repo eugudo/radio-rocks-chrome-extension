@@ -194,14 +194,12 @@ class PageContentManager extends PageUi {
                     li.setAttribute('data-url', channel.channelUrl);
                     ul.append(li);
                 });
-
         })
     }
 
     setBookmarksList(): void {
         const ul = document.getElementById(screensMap.bookmarks.bookmarksListId)!;
-        const children = ul.childNodes;
-        children.forEach(nodeItem => nodeItem.remove());
+        ul.innerHTML = '';
         const template = <HTMLTemplateElement>document.getElementById(screensMap.bookmarks.bookmarkTemplateId)!;
         const bookmarksListPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
         bookmarksListPromise.then((response) => {
@@ -209,10 +207,12 @@ class PageContentManager extends PageUi {
                 return;
             }
             Object.values(response).forEach((bookmark) => {
-                const clone = <HTMLElement>template.content.cloneNode(true);
+                const clone = <HTMLElement>template.content.cloneNode(true);           
+                const li = clone.querySelector(`.${screensMap.bookmarks.bookmarkItemDefaultClass}`)!;
                 const img = clone.querySelector(`.${screensMap.bookmarks.bookmarkItemImageClass}`)!;
                 const h2 = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemSingerClass}`)!;
                 const span = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemSongClass}`)!;
+                li.setAttribute('data-timestamp', bookmark.timestamp);
                 img.setAttribute('src', bookmark.coverUrl);
                 img.setAttribute('alt', bookmark.songAuthor);
                 h2.innerText = bookmark.songAuthor;
@@ -288,7 +288,7 @@ class PageEventsHandler extends PageUi {
         document.getElementById(footerMap.volumeIcon.id)!.addEventListener('click', this.muteAudio.bind(this));
         document.getElementById(screensMap.channels.screenId)!.addEventListener('click', this.switchChannel.bind(this));
         document.getElementById(screensMap.player.buttons.bookmarkButtonId)!.addEventListener('click', this.addOrRemoveBookmark.bind(this));
-
+        document.getElementById(screensMap.bookmarks.bookmarksListId)!.addEventListener('click', this.removeBookmarkFromList.bind(this));
     }
 
     changeNav(event: MouseEvent): void {
@@ -457,6 +457,7 @@ class PageEventsHandler extends PageUi {
             songAuthor,
             songTitle,
             coverUrl: this.state.channelInfo.coverUrl !== '' ? this.state.channelInfo.coverUrl : 'img/icon128.png',
+            timestamp: new Date().getTime().toString(),
         }
         const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
         bookmarksPromise.then((bookmarksList) => {
@@ -473,7 +474,7 @@ class PageEventsHandler extends PageUi {
                 const pageContentManager = new PageContentManager(this.state);
                 pageContentManager.setBookmarksList();
             } else {
-                // TODO: реализовать анимацию помещения в избранное значок белый становится фон и все
+                // TODO: реализовать анимацию помещения в избранное значок белый становится фон и все - addclass и remove class для кнопки меню, чтобы успела анимация проиграть
                 const newBookmarksList = bookmarksList.filter((bookmark) => bookmark.songAuthor !== newBookmark.songAuthor && bookmark.songTitle !== newBookmark.songTitle);
                 if(bookmarkButton.classList.contains('active')) {
                     bookmarkButton.classList.remove('active');
@@ -482,14 +483,40 @@ class PageEventsHandler extends PageUi {
                 this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: bookmarksList});
                 const pageContentManager = new PageContentManager(this.state);
                 pageContentManager.setBookmarksList();
-
             }
         });
     }
 
-
+    removeBookmarkFromList(event: MouseEvent): void {
+        const target = <HTMLElement> event.target!;
+        if(!target.classList.contains('bookmarksList__deleteButton')) {
+            return;
+        }
+        const bookmarkItem: HTMLLIElement | null = (event.target as Element).closest('li');
+        if (bookmarkItem === null) {
+            return;
+        }
+        const timestamp = bookmarkItem.getAttribute('data-timestamp');
+        if (timestamp === null) {
+            return;
+        }
+        const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
+        bookmarksPromise.then((bookmarksList) => {
+            if (!bookmarksList) {
+                return;
+            }
+            const filteredBookmarks = bookmarksList.filter(bookmark => bookmark.timestamp !== timestamp);
+            this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: filteredBookmarks});
+        });
+        bookmarkItem.remove();
+    }
 
 }
+
+
+
+
+
 
 
 

@@ -4,7 +4,6 @@
     padding: 25px 0 0 15px;
 }
 
-
 .bookmarksList {
     &__item {
         position: relative;
@@ -12,27 +11,12 @@
         align-items: center;
         justify-content: space-between;
         grid-template-areas:
-            "image singer"
-            "image song";
+            'image singer'
+            'image song';
         grid-template-columns: 70px 180px;
         margin-bottom: 20px;
-        &::after,
-        &::before {
-            opacity: 0;
-            content: "";
-            position: absolute;
-            top: calc(50% - 2px);
-            right: 5px;
-            width: 15px;
-            height: 5px;
-            background-color: var(--warning);
-            transform: rotate(45deg);
-        }
-        &::before {
-            transform: rotate(-45deg);
-        }
-        &:hover&::after,
-        &:hover&::before {
+        &:hover .bookmarksList__deleteButton,
+        &:hover .bookmarksList__deleteButton::before {
             opacity: 1;
             cursor: pointer;
         }
@@ -49,5 +33,22 @@
     }
     &__song {
         grid-area: song;
+    }
+    &__deleteButton,
+    &__deleteButton::before {
+        position: absolute;
+        top: calc(50% - 2px);
+        right: 5px;
+        width: 15px;
+        height: 5px;
+        background-color: var(--warning);
+        opacity: 0;
+        transform: rotate(45deg);
+    }
+    &__deleteButton::before {
+        content: '';
+        top: 0;
+        right: 0;
+        transform: rotate(90deg);
     }
 }
