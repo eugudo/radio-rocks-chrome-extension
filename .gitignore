@@ -2,3 +2,7 @@ node_modules
 src/assets/
 dist/
 .vscode/
+
+radio-rocks-chrome-extension.crx
+
+radio-rocks-chrome-extension.pem

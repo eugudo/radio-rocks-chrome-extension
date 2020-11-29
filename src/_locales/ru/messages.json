@@ -3,10 +3,13 @@
         "message": "Radio ROCKS"
     },
     "extensionDescription": {
-        "message": "Описаниетут нужно сделать   Radio ROCKS. Рок. Тільки рок!:: Неофіційний додаток :: Онлайн радіо"
+        "message": "Неофициальное расширение – онлайн радио."
     },
     "hoverIconTooltip": {
         "message": "Radio ROCKS. Рок. Только рок!"
+    },
+    "goToWebsite": {
+        "message": "Перейти на сайт"
     },
     "playerButtonTitle": {
         "message": "Проигрыватель"

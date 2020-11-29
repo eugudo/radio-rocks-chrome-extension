@@ -3,10 +3,13 @@
         "message": "Radio ROCKS"
     },
     "extensionDescription": {
-        "message": "Описаниетут нужно сделать"
+        "message": "Unofficial-extension – online radio."
     },
     "hoverIconTooltip": {
         "message": "Radio ROCKS. Rock. Only rock!"
+    },
+    "goToWebsite": {
+        "message": "Go to website"
     },
     "playerButtonTitle": {
         "message": "Player"

@@ -41,7 +41,7 @@ const screensMap = {
     },
     bookmarks: {
         screenId: 'bookmarksScreen',
-        bookmarksListId: "bookmarksList",
+        bookmarksListId: 'bookmarksList',
         bookmarkTemplateId: 'bookmarksListItem',
         bookmarkItemDefaultClass: 'bookmarksList__item',
         bookmarkItemImageClass: 'bookmarksList__image',
@@ -63,7 +63,7 @@ const footerMap = {
         svgMaxVolumeClass: 'volumeIcon__max',
         svgMediumVolumeClass: 'volumeIcon__medium',
         svgMinVolumeClass: 'volumeIcon__min',
-    }
+    },
 };
 
 const initializePage = (): void => {
@@ -142,11 +142,19 @@ class PageContentManager extends PageUi {
     }
 
     setPageContent(): void {
+        this.setHeaderTitles();
         this.setFooterChannelTitle();
         this.setFooterUiVolumelevel();
         this.setChannelsList();
         this.setBookmarksList();
         this.setPlayPauseButtonStatus();
+    }
+
+    setHeaderTitles(): void {
+        document.getElementById('headerLogoLink')!.setAttribute('title', chrome.i18n.getMessage('goToWebsite'));
+        document.getElementById('playerNav')!.setAttribute('title', chrome.i18n.getMessage('playerButtonTitle'));
+        document.getElementById('channelsNav')!.setAttribute('title', chrome.i18n.getMessage('channelsButtonTitle'));
+        document.getElementById('bookmarksNav')!.setAttribute('title', chrome.i18n.getMessage('bookmarksButtonTitle'));
     }
 
     setFooterChannelTitle(): void {
@@ -192,9 +200,10 @@ class PageContentManager extends PageUi {
                     }
                     li.innerText = channel.channelName;
                     li.setAttribute('data-url', channel.channelUrl);
+                    li.setAttribute('title', chrome.i18n.getMessage('channelsTitle'));
                     ul.append(li);
                 });
-        })
+        });
     }
 
     setBookmarksList(): void {
@@ -207,7 +216,7 @@ class PageContentManager extends PageUi {
                 return;
             }
             Object.values(response).forEach((bookmark) => {
-                const clone = <HTMLElement>template.content.cloneNode(true);           
+                const clone = <HTMLElement>template.content.cloneNode(true);
                 const li = clone.querySelector(`.${screensMap.bookmarks.bookmarkItemDefaultClass}`)!;
                 const img = clone.querySelector(`.${screensMap.bookmarks.bookmarkItemImageClass}`)!;
                 const h2 = <HTMLElement>clone.querySelector(`.${screensMap.bookmarks.bookmarkItemSingerClass}`)!;
@@ -224,11 +233,17 @@ class PageContentManager extends PageUi {
 
     setPlayPauseButtonStatus(): void {
         const isPlaing = this.state.player.getPlaingStatus();
-        document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.toggle(screensMap.player.buttons.playPauseButtonHiddenClass);
+        document
+            .getElementById(screensMap.player.buttons.playPauseButtonId)!
+            .classList.toggle(screensMap.player.buttons.playPauseButtonHiddenClass);
         if (isPlaing && this.lastActiveScreenId === screensMap.player.screenId) {
-            document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
+            document
+                .getElementById(screensMap.player.buttons.playPauseButtonId)!
+                .classList.toggle(screensMap.player.buttons.playPauseButtonActiveClass);
         } else {
-            document.getElementById(screensMap.player.buttons.playPauseButtonId)!.classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
+            document
+                .getElementById(screensMap.player.buttons.playPauseButtonId)!
+                .classList.remove(screensMap.player.buttons.playPauseButtonActiveClass);
         }
     }
 
@@ -238,12 +253,12 @@ class PageContentManager extends PageUi {
         const isHidden = songInfo.classList.contains('hidden');
         if (!isHidden && this.state.channelInfo.currentTime === null) {
             songInfo.classList.add('hidden');
-            return
+            return;
         }
         if (!this.state.player.getPlaingStatus()) {
             isHidden ? null : songInfo.classList.add('hidden');
-            return
-        }      
+            return;
+        }
         if (isHidden && this.state.channelInfo.currentTime !== null) {
             songInfo.classList.remove('hidden');
         }
@@ -252,13 +267,15 @@ class PageContentManager extends PageUi {
         const singer = this.state.channelInfo.singerName;
         const song = this.state.channelInfo.songName;
         author.textContent = singer;
-        songTitle.textContent = song;  
+        songTitle.textContent = song;
         const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
         bookmarksPromise.then((bookmarksList) => {
             if (!bookmarksList) {
                 return;
             }
-            const isExistSong = bookmarksList.find((bookmark) => bookmark.songAuthor === singer && bookmark.songTitle === song);
+            const isExistSong = bookmarksList.find(
+                (bookmark) => bookmark.songAuthor === singer && bookmark.songTitle === song
+            );
             if (isExistSong && !bookmarkButton.classList.contains('active')) {
                 bookmarkButton.classList.add('active');
             } else if (!isExistSong && bookmarkButton.classList.contains('active')) {
@@ -266,7 +283,6 @@ class PageContentManager extends PageUi {
             }
         });
     }
-
 }
 
 class PageEventsHandler extends PageUi {
@@ -296,10 +312,7 @@ class PageEventsHandler extends PageUi {
         if (navButton === null || navButton.classList.contains(navButtonsMap.activeNavButtonClass)) {
             return;
         }
-        document
-            .getElementById(navButtonsMap.containerId)!
-            .querySelectorAll(`.${navButtonsMap.activeNavButtonClass}`)
-            .forEach((element) => element.classList.remove(navButtonsMap.activeNavButtonClass));
+        document.getElementById(navButtonsMap.containerId)!.querySelectorAll(`.${navButtonsMap.activeNavButtonClass}`).forEach((element) => element.classList.remove(navButtonsMap.activeNavButtonClass));
         navButton.classList.add(navButtonsMap.activeNavButtonClass);
         this.lastActiveNavButtonId = navButton.id;
         this.state.setLastActiveNavButtonId(this.lastActiveNavButtonId);
@@ -354,7 +367,7 @@ class PageEventsHandler extends PageUi {
 
     setChromeStorageData = <T>(key: Record<string, T>): void => {
         chrome.storage.sync.set(key);
-    }
+    };
 
     changeVolumeLevel(event: MouseEvent): void {
         const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
@@ -380,28 +393,27 @@ class PageEventsHandler extends PageUi {
         const maxVolumePath = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgMaxVolumeClass}`)!;
         const speakerIcon = volumeIcon.querySelector(`.${footerMap.volumeIcon.svgSpeakerClass}`)!;
         if (percent === 0) {
-            [minVolumePath, mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.add('hidden'));
+            [minVolumePath, mediumVolumePath, maxVolumePath].forEach((elem) => elem.classList.add('hidden'));
             speakerIcon.classList.add('muted');
             return;
         } else if (percent > 0 && percent < 0.5) {
             minVolumePath.classList.remove('hidden');
             speakerIcon.classList.remove('muted');
-            [mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.add('hidden'));
+            [mediumVolumePath, maxVolumePath].forEach((elem) => elem.classList.add('hidden'));
             return;
         } else if (percent > 0.5 && percent < 0.8) {
             maxVolumePath.classList.add('hidden');
             speakerIcon.classList.remove('muted');
-            [minVolumePath, mediumVolumePath].forEach(elem => elem.classList.remove('hidden'));
+            [minVolumePath, mediumVolumePath].forEach((elem) => elem.classList.remove('hidden'));
             return;
         } else if (percent > 0.8) {
             speakerIcon.classList.remove('muted');
-            [minVolumePath, mediumVolumePath, maxVolumePath].forEach(elem => elem.classList.remove('hidden'));
+            [minVolumePath, mediumVolumePath, maxVolumePath].forEach((elem) => elem.classList.remove('hidden'));
         }
         return;
     }
 
     muteAudio(): void {
-        // TODO: сделать lastVolumeLevel чтобы не возвращать к 100% звук
         const volumeElem = document.getElementById(footerMap.volumeLevel.id)!;
         if (this.state.player.getVolumeLevel() === 0) {
             this.state.player.setVolumeLevel(1);
@@ -423,7 +435,7 @@ class PageEventsHandler extends PageUi {
         }
         const url = li.getAttribute('data-url');
         if (url === null) {
-            return
+            return;
         }
         const lastActiveChannelPromise = this.getChromeStorageData<LastActiveChannel>(settings.lastActiveChannel);
         lastActiveChannelPromise.then((response) => {
@@ -435,15 +447,18 @@ class PageEventsHandler extends PageUi {
                 if (response === undefined) {
                     return;
                 }
-                const newChannel = Object.values(response).find(channel => channel.channelUrl === url)!;
-                document.getElementById(screensMap.channels.screenId)!.querySelectorAll("li").forEach(elem => elem.classList.remove('active'));
+                const newChannel = Object.values(response).find((channel) => channel.channelUrl === url)!;
+                document
+                    .getElementById(screensMap.channels.screenId)!
+                    .querySelectorAll('li')
+                    .forEach((elem) => elem.classList.remove('active'));
                 li.classList.add('active');
                 this.setChromeStorageData({ [settings.lastActiveChannel]: newChannel });
                 const pageContentManager = new PageContentManager(this.state);
                 pageContentManager.setFooterChannelTitle();
                 this.state.player.switchChannel(newChannel);
             });
-        })
+        });
     }
 
     addOrRemoveBookmark(event: MouseEvent): void {
@@ -451,36 +466,41 @@ class PageEventsHandler extends PageUi {
         const songAuthor = this.state.channelInfo.singerName;
         const songTitle = this.state.channelInfo.songName;
         if (!this.state.player.getPlaingStatus() || songAuthor === '') {
-            return
+            return;
         }
         const newBookmark: Bookmark = {
             songAuthor,
             songTitle,
             coverUrl: this.state.channelInfo.coverUrl !== '' ? this.state.channelInfo.coverUrl : 'img/icon128.png',
             timestamp: new Date().getTime().toString(),
-        }
+        };
         const bookmarksPromise = this.getChromeStorageData<Bookmark[]>(settings.bookmarksList);
         bookmarksPromise.then((bookmarksList) => {
             if (!bookmarksList) {
                 return;
             }
-            const isDouble = bookmarksList.some((bookmark) => bookmark.songAuthor === newBookmark.songAuthor && bookmark.songTitle === newBookmark.songTitle);
+            const isDouble = bookmarksList.some(
+                (bookmark) =>
+                    bookmark.songAuthor === newBookmark.songAuthor && bookmark.songTitle === newBookmark.songTitle
+            );
             if (!isDouble) {
-                if(!bookmarkButton.classList.contains('active')) {
+                if (!bookmarkButton.classList.contains('active')) {
                     bookmarkButton.classList.add('active');
                 }
                 bookmarksList.push(newBookmark);
-                this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: bookmarksList});
+                this.setChromeStorageData<Bookmark[]>({ [settings.bookmarksList]: bookmarksList });
                 const pageContentManager = new PageContentManager(this.state);
                 pageContentManager.setBookmarksList();
             } else {
-                // TODO: реализовать анимацию помещения в избранное значок белый становится фон и все - addclass и remove class для кнопки меню, чтобы успела анимация проиграть
-                const newBookmarksList = bookmarksList.filter((bookmark) => bookmark.songAuthor !== newBookmark.songAuthor && bookmark.songTitle !== newBookmark.songTitle);
-                if(bookmarkButton.classList.contains('active')) {
+                const newBookmarksList = bookmarksList.filter(
+                    (bookmark) =>
+                        bookmark.songAuthor !== newBookmark.songAuthor && bookmark.songTitle !== newBookmark.songTitle
+                );
+                if (bookmarkButton.classList.contains('active')) {
                     bookmarkButton.classList.remove('active');
                 }
                 bookmarksList = newBookmarksList;
-                this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: bookmarksList});
+                this.setChromeStorageData<Bookmark[]>({ [settings.bookmarksList]: bookmarksList });
                 const pageContentManager = new PageContentManager(this.state);
                 pageContentManager.setBookmarksList();
             }
@@ -488,8 +508,8 @@ class PageEventsHandler extends PageUi {
     }
 
     removeBookmarkFromList(event: MouseEvent): void {
-        const target = <HTMLElement> event.target!;
-        if(!target.classList.contains('bookmarksList__deleteButton')) {
+        const target = <HTMLElement>event.target!;
+        if (!target.classList.contains('bookmarksList__deleteButton')) {
             return;
         }
         const bookmarkItem: HTMLLIElement | null = (event.target as Element).closest('li');
@@ -505,20 +525,13 @@ class PageEventsHandler extends PageUi {
             if (!bookmarksList) {
                 return;
             }
-            const filteredBookmarks = bookmarksList.filter(bookmark => bookmark.timestamp !== timestamp);
-            this.setChromeStorageData<Bookmark[]>({[settings.bookmarksList]: filteredBookmarks});
+            const filteredBookmarks = bookmarksList.filter((bookmark) => bookmark.timestamp !== timestamp);
+            this.setChromeStorageData<Bookmark[]>({ [settings.bookmarksList]: filteredBookmarks });
         });
         bookmarkItem.remove();
     }
-
 }
 
-
-
-
-
-
-
-
-
-
+// TODO: сделать lastVolumeLevel чтобы не возвращать к 100% звук
+// TODO: реализовать анимацию помещения в избранное значок белый становится фон и все - addclass и remove class для кнопки меню, чтобы успела анимация проиграть
+// TODO: вместо паузы реализовать остановку аудио (очищать src в аудио background.js)

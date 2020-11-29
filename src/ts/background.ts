@@ -106,7 +106,6 @@ const player: Player = {
         }
         chrome.browserAction.setBadgeText({ text: '' });
         this.isPlaying = bool;
-        // TODO: разобраться с отставанием аудио. this.currentTime = 0; не помогает. Нужно сдвигать в конец воспроизведения либо обнулять src и сетить заново
         this.audio.pause();
     },
     setVolumeLevel(level: number): void {
